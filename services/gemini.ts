@@ -23,10 +23,12 @@ const getAuthToken = () => {
 
 // Khởi tạo AI (Chỉ khi có key hợp lệ)
 let ai: GoogleGenAI | null = null;
-const token = getAuthToken();
-if (token) {
-    ai = new GoogleGenAI({ apiKey: token });
+const apiKey = import.meta.env.VITE_GENAI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("API Key is missing — check your .env file");
 }
+
 
 export const generateAnswer = async (
   question: string,
