@@ -17,12 +17,26 @@
 {
   "imports": {
     "@google/genai": "https://esm.run/@google/genai",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react": "https://aistudiocdn.com/react@^19.2.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/"
   }
 }
 </script>
+
+    <script>
+      // ============================================================================
+      // CONFIGURATION
+      // To run this app:
+      // 1. Replace 'YOUR_API_KEY_HERE' with your actual Google GenAI API Key.
+      // 2. IMPORTANT: Do not commit your real key to public GitHub repositories.
+      // ============================================================================
+      window.process = {
+        env: {
+          API_KEY: 'YOUR_API_KEY_HERE' 
+        }
+      };
+    </script>
 
     <style>
       body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
@@ -49,29 +63,19 @@
       import { GoogleGenAI, Type } from "@google/genai";
       const { useState, useEffect, useRef } = React;
 
-      // ============================================================================
-      // CẤU HÌNH HỆ THỐNG
-      // ============================================================================
-      const _sysConfig = {
-          // 👇 DÁN KEY CỦA BẠN VÀO DÒNG DƯỚI ĐÂY 👇
-          authToken: 'AIzaSyDiu-XaOAD4aNT234hpn_drGo_7z8EMfsA', 
-      };
-
-      const getAuthToken = () => {
-          const t = _sysConfig.authToken;
-          if (!t || t === 'Paste your key here' || t.length < 10) return null;
-          return t;
-      };
-
       // --- AI SERVICE ---
       let aiInstance = null;
-      const token = getAuthToken();
-      if (token) {
-          aiInstance = new GoogleGenAI({ apiKey: token });
+      
+      try {
+        if (process.env.API_KEY && process.env.API_KEY !== 'YOUR_API_KEY_HERE') {
+            aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        }
+      } catch (e) {
+        console.error("Failed to initialize AI", e);
       }
 
       const generateGrammarLesson = async (topic) => {
-        if (!aiInstance) throw new Error("Chưa nhập API Key");
+        if (!aiInstance) throw new Error("API Key chưa hợp lệ. Vui lòng cập nhật process.env.API_KEY trong file index.html");
 
         const model = "gemini-2.5-flash";
         const prompt = `
@@ -513,7 +517,7 @@
             const data = await generateGrammarLesson(topic);
             setLessonData(data);
           } catch (e) {
-            alert("Lỗi: " + e.message + ". Vui lòng kiểm tra API Key.");
+            alert("Lỗi: " + e.message + ". Vui lòng kiểm tra API Key trong file index.html.");
           } finally {
             setLoading(false);
           }
