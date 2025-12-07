@@ -17,13 +17,26 @@
 {
   "imports": {
     "@google/genai": "https://esm.run/@google/genai",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react": "https://aistudiocdn.com/react@^19.2.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/"
   }
 }
 </script>
 
+    <script>
+      // ============================================================================
+      // CONFIGURATION
+      // To run this app:
+      // 1. Replace 'YOUR_API_KEY_HERE' with your actual Google GenAI API Key.
+      // 2. IMPORTANT: Do not commit your real key to public GitHub repositories.
+      // ============================================================================
+      window.process = {
+        env: {
+          API_KEY: 'YOUR_API_KEY_HERE' 
+        }
+      };
+    </script>
 
     <style>
       body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; }
@@ -148,10 +161,12 @@
                           type: Type.ARRAY,
                           items: {
                             type: Type.OBJECT,
-                            properties: { en: { type: Type.STRING }, vi: { type: Type.STRING } }
+                            properties: { en: { type: Type.STRING }, vi: { type: Type.STRING } },
+                            required: ["en", "vi"]
                           }
                         }
-                      }
+                      },
+                      required: ["heading", "content"]
                     }
                   },
                   exercises: {
@@ -168,10 +183,12 @@
                         answer: { type: Type.STRING },
                         correction: { type: Type.STRING },
                         explanation: { type: Type.STRING }
-                      }
+                      },
+                      required: ["id", "type", "question", "answer", "explanation"]
                     }
                   }
-                }
+                },
+                required: ["title", "theory", "exercises"]
              }
           }
         });
@@ -190,6 +207,14 @@
 
       // --- THEORY PANEL ---
       const TheoryPanel = ({ data }) => {
+        if (!data || !data.theory || !Array.isArray(data.theory)) {
+          return (
+            <div className="h-full flex items-center justify-center bg-white rounded-l-2xl p-6 text-gray-400 italic">
+               Không có dữ liệu lý thuyết.
+            </div>
+          );
+        }
+
         return (
           <div className="h-full overflow-y-auto p-6 bg-white rounded-l-2xl custom-scrollbar">
             <h2 className="text-2xl font-bold text-blue-800 mb-6 border-b-2 border-blue-100 pb-2">
@@ -235,7 +260,26 @@
         // reorderUsedIndices: Stores the index of the word from the original 'words' array that has been clicked
         const [reorderUsedIndices, setReorderUsedIndices] = useState([]); 
 
+        // Safety check for empty exercises
+        if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+           return (
+             <div className="h-full flex items-center justify-center bg-gray-50 rounded-r-2xl border-l border-gray-200 text-gray-400 italic">
+               Không có bài tập nào.
+             </div>
+           );
+        }
+
         const currentEx = exercises[currentIndex];
+        
+        // Safety check for current exercise
+        if (!currentEx) {
+            return (
+             <div className="h-full flex items-center justify-center bg-gray-50 rounded-r-2xl border-l border-gray-200 text-red-400 italic">
+               Lỗi tải câu hỏi.
+             </div>
+           );
+        }
+
         const progress = Math.round((currentIndex / exercises.length) * 100);
         const scorePercent = Math.round((score / exercises.length) * 100);
 
@@ -254,7 +298,7 @@
           if (currentEx.type === 'reorder' && reorderUsedIndices.length === 0) return;
 
           let isCorrect = false;
-          const cleanAns = currentEx.answer.toString().trim().toLowerCase();
+          const cleanAns = currentEx.answer ? currentEx.answer.toString().trim().toLowerCase() : "";
 
           if (currentEx.type === 'reorder') {
              // Construct the sentence from the used indices
@@ -303,7 +347,7 @@
             case 'true_false':
               return (
                 <div className="grid grid-cols-1 gap-3 mt-4">
-                  {currentEx.options.map((opt, i) => (
+                  {currentEx.options && currentEx.options.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => status === 'idle' && setUserAnswer(opt)}
@@ -363,6 +407,7 @@
                );
 
             case 'reorder':
+              if (!currentEx.words) return null;
               return (
                 <div className="mt-4 space-y-4">
                    {/* Selected Area */}
